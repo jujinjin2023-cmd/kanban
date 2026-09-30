@@ -1,115 +1,312 @@
-<div class="flex items-center space-x-4">
-            <div class="text-right">
-                <div class="text-xs text-slate-400">系统数据最后同步</div>
-                <div class="font-mono text-cyan-400 font-bold text-sm" id="clock">{{ data.update_time }}</div>
-            </div>
-            <button onclick="location.reload()" class="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 text-slate-300 transition">
-                🔄 刷新
-            </button>
-        </div>
-    </header>
-
-    <!-- KPI 顶栏数据矩阵 -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
-        <div class="hud-card rounded-2xl p-5 border-l-4 border-l-cyan-500">
-            <div class="text-slate-400 text-xs font-medium uppercase tracking-wider">接入站点总规模</div>
-            <div class="text-3xl md:text-4xl font-extrabold font-mono text-white mt-2">{{ data.total }} <span class="text-sm font-sans font-normal text-slate-400">个</span></div>
-            <div class="text-xs text-cyan-400/80 mt-2 flex items-center">全周期统筹监控</div>
-        </div>
-
-        <div class="hud-card rounded-2xl p-5 border-l-4 border-l-emerald-500 neon-glow-emerald">
-            <div class="text-slate-400 text-xs font-medium uppercase tracking-wider">已上线交付验收</div>
-            <div class="text-3xl md:text-4xl font-extrabold font-mono text-emerald-400 mt-2">{{ data.completed }} <span class="text-sm font-sans font-normal text-slate-400">个</span></div>
-            <div class="text-xs text-emerald-400/80 mt-2 flex items-center">✓ 运营闭环</div>
-        </div>
-
-        <div class="hud-card rounded-2xl p-5 border-l-4 border-l-amber-500">
-            <div class="text-slate-400 text-xs font-medium uppercase tracking-wider">推进攻坚中</div>
-            <div class="text-3xl md:text-4xl font-extrabold font-mono text-amber-400 mt-2">{{ data.in_progress }} <span class="text-sm font-sans font-normal text-slate-400">个</span></div>
-            <div class="text-xs text-amber-400/80 mt-2 flex items-center">⚡ 里程碑节点跟踪</div>
-        </div>
-
-        <div class="hud-card rounded-2xl p-5 border-l-4 border-l-indigo-500">
-            <div class="text-slate-400 text-xs font-medium uppercase tracking-wider">全网验收达成率</div>
-            <div class="text-3xl md:text-4xl font-extrabold font-mono text-indigo-300 mt-2">{{ data.rate }}<span class="text-xl">%</span></div>
-            <!-- 进度条 -->
-            <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
-                <div class="bg-gradient-to-r from-cyan-500 to-indigo-500 h-1.5 rounded-full" style="width: {{ data.rate }}%"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 站点详情与里程碑推进卡片流 -->
-    <div class="space-y-4">
-        <div class="flex items-center justify-between px-1">
-            <h2 class="text-base font-bold text-slate-300 tracking-wide flex items-center gap-2">
-                <span class="w-1.5 h-4 bg-cyan-400 rounded-full"></span> 站点全流程节点矩阵
-            </h2>
-            <span class="text-xs text-slate-500">共计 {{ data.stations|length }} 个站点记录</span>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {% for s in data.stations %}
-            <div class="hud-card rounded-2xl p-5 flex flex-col justify-between transition duration-300 hover:-translate-y-1 hover:border-cyan-500/40 relative overflow-hidden">
-                <!-- 背景微光标记 -->
-                {% if s.is_done %}
-                <div class="absolute -right-12 -top-12 w-28 h-28 bg-emerald-500/10 rounded-full blur-2xl"></div>
-                {% endif %}
-
-                <div>
-                    <!-- 卡片顶行：站名 + 状态标签 -->
-                    <div class="flex justify-between items-start mb-4">
-                        <h3 class="font-bold text-lg text-white tracking-wide truncate max-w-[180px]">{{ s.name }}</h3>
-                        {% if s.is_done %}
-                        <span class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                            ● 验收已完成
-                        </span>
-                        {% else %}
-                        <span class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                            ⏳ 推进中
-                        </span>
-                        {% endif %}
-                    </div>
-
-                    <!-- 节点生命周期流程链 -->
-                    <div class="space-y-2.5 text-xs text-slate-300 py-2 border-y border-slate-800/80 my-3">
-                        <div class="flex justify-between items-center">
-                            <span class="text-slate-400">T+3 节点截止</span>
-                            <span class="font-mono text-slate-200">{{ s.t3 }}</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-slate-400">T+10 节点截止</span>
-                            <span class="font-mono text-slate-200">{{ s.t10 }}</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-slate-400">高德/百度路书</span>
-                            <span class="px-2 py-0.5 rounded bg-slate-800 font-mono text-[11px] text-cyan-300">{{ s.roadbook }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 卡片底部状态进度提示 -->
-                <div class="mt-2 pt-2 flex items-center justify-between text-xs">
-                    <span class="text-slate-500">当前阶段</span>
-                    <span class="font-semibold {% if s.is_done %}text-emerald-400{% else %}text-amber-400{% endif %}">
-                        {{ s.status_text }}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能运维指挥监控中心 · 全生命周期看板</title>
+    <!-- Tailwind CSS 界面样式 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 拖拽排版组件 SortableJS -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #030712;
+            --card-bg: rgba(15, 23, 42, 0.65);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --accent-color: #06b6d4;
+        }
+        body {
+            background-color: var(--bg-color);
+            transition: background-color 0.4s ease;
+        }
+        .hud-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: border-color 0.3s ease, background 0.3s ease;
+        }
+        .drag-handle {
+            cursor: grab;
+        }
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+        .sortable-ghost {
+            opacity: 0.3;
+            transform: scale(0.98);
+        }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(1.3); } }
+        .radar-pulse { animation: pulse-dot 2s infinite ease-in-out; }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen py-8 px-4 md:px-8 font-sans pb-24">
+    <div class="max-w-7xl mx-auto">
+        <!-- 头部导航 -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 border-b border-slate-800/80 mb-8 gap-4">
+            <div>
+                <div class="flex items-center space-x-3">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 radar-pulse"></span> LIVE 实时监控中
                     </span>
+                    <span class="text-xs text-slate-500 tracking-wider font-mono">FEISHU BITABLE SYNCED</span>
+                </div>
+                <h1 class="text-2xl md:text-4xl font-black mt-2 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-100 to-indigo-300">
+                    落站与上线全生命周期 · 智能看板
+                </h1>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <div class="text-right mr-2 hidden sm:block">
+                    <div class="text-xs text-slate-400">系统最后同步</div>
+                    <div class="font-mono text-cyan-400 font-bold text-sm" id="clock">加载中...</div>
+                </div>
+                <button onclick="loadData()" class="p-2.5 bg-slate-800/80 hover:bg-slate-700 rounded-xl border border-slate-700 text-slate-300 transition text-sm">🔄 刷新</button>
+                <button onclick="toggleConfigModal()" class="px-3.5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-black font-bold rounded-xl transition text-sm flex items-center gap-1.5 shadow-lg shadow-cyan-500/20">
+                    ⚙️ 自定义风格与布局
+                </button>
+            </div>
+        </header>
+
+        <!-- KPI 顶栏数据矩阵（支持鼠标按住拖拽） -->
+        <div id="kpi-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
+            <div data-id="kpi-total" class="hud-card rounded-2xl p-5 border-l-4 border-l-cyan-500 drag-handle">
+                <div class="flex justify-between items-center text-slate-400 text-xs font-medium">
+                    <span>接入站点总规模</span>
+                    <span class="text-slate-600 text-[10px]">⠿ 拖拽</span>
+                </div>
+                <div class="text-3xl md:text-4xl font-extrabold font-mono text-white mt-2" id="total">--</div>
+            </div>
+
+            <div data-id="kpi-completed" class="hud-card rounded-2xl p-5 border-l-4 border-l-emerald-500 drag-handle">
+                <div class="flex justify-between items-center text-slate-400 text-xs font-medium">
+                    <span>已上线交付验收</span>
+                    <span class="text-slate-600 text-[10px]">⠿ 拖拽</span>
+                </div>
+                <div class="text-3xl md:text-4xl font-extrabold font-mono text-emerald-400 mt-2" id="completed">--</div>
+            </div>
+
+            <div data-id="kpi-in-progress" class="hud-card rounded-2xl p-5 border-l-4 border-l-amber-500 drag-handle">
+                <div class="flex justify-between items-center text-slate-400 text-xs font-medium">
+                    <span>推进攻坚中</span>
+                    <span class="text-slate-600 text-[10px]">⠿ 拖拽</span>
+                </div>
+                <div class="text-3xl md:text-4xl font-extrabold font-mono text-amber-400 mt-2" id="in_progress">--</div>
+            </div>
+
+            <div data-id="kpi-rate" class="hud-card rounded-2xl p-5 border-l-4 border-l-indigo-500 drag-handle">
+                <div class="flex justify-between items-center text-slate-400 text-xs font-medium">
+                    <span>全网验收达成率</span>
+                    <span class="text-slate-600 text-[10px]">⠿ 拖拽</span>
+                </div>
+                <div class="text-3xl md:text-4xl font-extrabold font-mono text-indigo-300 mt-2" id="rate">0%</div>
+                <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
+                    <div id="rate-bar" class="bg-gradient-to-r from-cyan-500 to-indigo-500 h-1.5 rounded-full" style="width: 0%"></div>
                 </div>
             </div>
-            {% endfor %}
         </div>
 
-        {% if data.stations|length == 0 %}
-        <div class="hud-card rounded-2xl p-12 text-center text-slate-500 text-sm">
-            当前表格中暂无站点记录，请在飞书表格中添加数据。
+        <!-- 站点详情卡片流（支持自由拖拽换位） -->
+        <div class="space-y-4">
+            <div class="flex items-center justify-between px-1">
+                <h2 class="text-base font-bold text-slate-300 flex items-center gap-2">
+                    <span class="w-1.5 h-4 bg-cyan-400 rounded-full"></span> 站点全流程节点矩阵
+                </h2>
+                <span class="text-xs text-slate-500">💡 提示：按住任意卡片可随意拖拽调换顺序</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="stations-grid">
+                <div class="text-slate-400 text-sm py-8">正在从飞书拉取最新站点数据...</div>
+            </div>
         </div>
-        {% endif %}
     </div>
-</div>
 
-<!-- 自动 60 秒静默轮询刷新 -->
-<script>
-    setInterval(() => {
-        location.reload();
-    }, 60000);
-</script>
+    <!-- 自定义配色与布局弹窗 -->
+    <div id="config-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-6">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold text-cyan-400">🎨 看板视觉与颜色自定义</h3>
+                <button onclick="toggleConfigModal()" class="text-slate-400 hover:text-white text-xl">✕</button>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs text-slate-400 font-semibold uppercase tracking-wider">一键切换科技主题</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="applyPreset('#030712', 'rgba(15, 23, 42, 0.75)', 'rgba(6, 182, 212, 0.4)')" class="p-2.5 rounded-lg border border-cyan-500/40 bg-slate-950 text-xs font-bold text-cyan-300 text-left">
+                        🌊 深海科技蓝
+                    </button>
+                    <button onclick="applyPreset('#000000', 'rgba(24, 24, 27, 0.85)', 'rgba(245, 158, 11, 0.5)')" class="p-2.5 rounded-lg border border-amber-500/40 bg-zinc-950 text-xs font-bold text-amber-300 text-left">
+                        🕶️ 黑武士金
+                    </button>
+                    <button onclick="applyPreset('#022c22', 'rgba(6, 78, 59, 0.6)', 'rgba(52, 211, 153, 0.4)')" class="p-2.5 rounded-lg border border-emerald-500/40 bg-emerald-950 text-xs font-bold text-emerald-300 text-left">
+                        🌲 极光骇客绿
+                    </button>
+                    <button onclick="applyPreset('#1e1b4b', 'rgba(49, 46, 129, 0.6)', 'rgba(168, 85, 247, 0.5)')" class="p-2.5 rounded-lg border border-purple-500/40 bg-indigo-950 text-xs font-bold text-purple-300 text-left">
+                        🔮 赛博星空紫
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-3 pt-2 border-t border-slate-800">
+                <label class="text-xs text-slate-400 font-semibold uppercase tracking-wider">精细颜色微调</label>
+                <div class="flex items-center justify-between text-sm">
+                    <span>页面背景颜色</span>
+                    <input type="color" id="bg-picker" onchange="updateStyle('--bg-color', this.value)" class="w-9 h-9 rounded border-0 cursor-pointer bg-transparent">
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                    <span>各分屏卡片边框高亮色</span>
+                    <input type="color" id="border-picker" onchange="updateStyle('--border-color', this.value)" class="w-9 h-9 rounded border-0 cursor-pointer bg-transparent">
+                </div>
+            </div>
+
+            <div class="flex space-x-3 pt-4 border-t border-slate-800">
+                <button onclick="resetLayoutAndStyle()" class="w-1/2 py-2.5 rounded-xl border border-rose-500/40 text-rose-400 hover:bg-rose-500/10 text-xs font-bold transition">
+                    恢复默认布局与颜色
+                </button>
+                <button onclick="toggleConfigModal()" class="w-1/2 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-black transition">
+                    完成并保存
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 你的阿里云 FC 实时数据接口
+        const API_URL = "https://yunwei-kanban-udzwfumlpl.cn-hangzhou.fcapp.run/api/data";
+        let rawStationsData = [];
+
+        // 初始化读取本地缓存的主题颜色
+        function loadSavedTheme() {
+            const savedBg = localStorage.getItem('cfg_bg') || '#030712';
+            const savedCardBg = localStorage.getItem('cfg_card_bg') || 'rgba(15, 23, 42, 0.65)';
+            const savedBorder = localStorage.getItem('cfg_border') || 'rgba(255, 255, 255, 0.1)';
+            
+            document.documentElement.style.setProperty('--bg-color', savedBg);
+            document.documentElement.style.setProperty('--card-bg', savedCardBg);
+            document.documentElement.style.setProperty('--border-color', savedBorder);
+        }
+        loadSavedTheme();
+
+        function updateStyle(prop, val) {
+            document.documentElement.style.setProperty(prop, val);
+            if(prop === '--bg-color') localStorage.setItem('cfg_bg', val);
+            if(prop === '--border-color') localStorage.setItem('cfg_border', val);
+        }
+
+        function applyPreset(bg, cardBg, border) {
+            updateStyle('--bg-color', bg);
+            document.documentElement.style.setProperty('--card-bg', cardBg);
+            localStorage.setItem('cfg_card_bg', cardBg);
+            updateStyle('--border-color', border);
+        }
+
+        function resetLayoutAndStyle() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        function toggleConfigModal() {
+            const modal = document.getElementById('config-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        // 初始化拖拽引擎
+        function initDraggables() {
+            const kpiGrid = document.getElementById('kpi-grid');
+            new Sortable(kpiGrid, {
+                animation: 200,
+                ghostClass: 'sortable-ghost',
+                onEnd: () => {
+                    const order = Array.from(kpiGrid.children).map(c => c.getAttribute('data-id'));
+                    localStorage.setItem('cfg_kpi_order', JSON.stringify(order));
+                }
+            });
+
+            const stationsGrid = document.getElementById('stations-grid');
+            new Sortable(stationsGrid, {
+                animation: 200,
+                handle: '.hud-card',
+                ghostClass: 'sortable-ghost',
+                onEnd: () => {
+                    const order = Array.from(stationsGrid.children).map(c => c.getAttribute('data-station-name'));
+                    localStorage.setItem('cfg_station_order', JSON.stringify(order));
+                }
+            });
+        }
+
+        // 从阿里云 FC 读取飞书实时数据
+        async function loadData() {
+            try {
+                const res = await fetch(API_URL);
+                const data = await res.json();
+                
+                if (data.error) {
+                    document.getElementById('stations-grid').innerHTML = `
+                        <div class="col-span-full p-4 bg-rose-500/20 border border-rose-500/40 text-rose-300 rounded-xl text-sm">
+                            ⚠️ 错误提示：${data.error}
+                        </div>`;
+                    return;
+                }
+
+                document.getElementById('clock').innerText = data.update_time;
+                document.getElementById('total').innerText = (data.total || 0) + ' 个';
+                document.getElementById('completed').innerText = (data.completed || 0) + ' 个';
+                document.getElementById('in_progress').innerText = (data.in_progress || 0) + ' 个';
+                document.getElementById('rate').innerText = (data.rate || 0) + '%';
+                document.getElementById('rate-bar').style.width = (data.rate || 0) + '%';
+
+                rawStationsData = data.stations || [];
+
+                // 保持用户拖拽调换过的顺序
+                const savedOrder = JSON.parse(localStorage.getItem('cfg_station_order') || '[]');
+                if (savedOrder.length > 0) {
+                    rawStationsData.sort((a, b) => {
+                        let idxA = savedOrder.indexOf(a.name);
+                        let idxB = savedOrder.indexOf(b.name);
+                        if (idxA === -1) idxA = 999;
+                        if (idxB === -1) idxB = 999;
+                        return idxA - idxB;
+                    });
+                }
+
+                const grid = document.getElementById('stations-grid');
+                if (rawStationsData.length === 0) {
+                    grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-10">当前表格中暂无站点记录</div>';
+                    return;
+                }
+
+                grid.innerHTML = rawStationsData.map(s => `
+                    <div data-station-name="${s.name}" class="hud-card rounded-2xl p-5 drag-handle">
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="font-bold text-lg text-white flex items-center gap-1.5">
+                                <span class="text-slate-600 text-xs">⠿</span> ${s.name}
+                            </h3>
+                            <span class="px-2 py-0.5 text-xs rounded ${s.is_done ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-300'}">
+                                ${s.is_done ? '● 已验收' : '⏳ 推进中'}
+                            </span>
+                        </div>
+                        <div class="text-xs text-slate-300 space-y-1.5 border-t border-slate-800/80 pt-2">
+                            <div class="flex justify-between"><span>T+3 节点</span><span class="font-mono text-slate-200">${s.t3}</span></div>
+                            <div class="flex justify-between"><span>T+10 节点</span><span class="font-mono text-slate-200">${s.t10}</span></div>
+                            <div class="flex justify-between"><span>路书配置</span><span class="text-cyan-300">${s.roadbook}</span></div>
+                        </div>
+                    </div>
+                `).join('');
+
+                initDraggables();
+            } catch(e) {
+                console.error(e);
+                document.getElementById('stations-grid').innerHTML = `
+                    <div class="col-span-full p-4 bg-amber-500/20 border border-amber-500/40 text-amber-300 rounded-xl text-sm">
+                        ⏳ 正在等待阿里云函数计算响应，如果长时间未响应，请检查阿里云 FC 是否已部署好最新的 app.py 代码。
+                    </div>`;
+            }
+        }
+
+        // 打开网页立即加载
+        loadData();
+        // 每 30 秒自动静默刷新一次
+        setInterval(loadData, 30000);
+    </script>
+</body>
+</html>
