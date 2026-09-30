@@ -1,1 +1,115 @@
+<div class="flex items-center space-x-4">
+            <div class="text-right">
+                <div class="text-xs text-slate-400">系统数据最后同步</div>
+                <div class="font-mono text-cyan-400 font-bold text-sm" id="clock">{{ data.update_time }}</div>
+            </div>
+            <button onclick="location.reload()" class="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 text-slate-300 transition">
+                🔄 刷新
+            </button>
+        </div>
+    </header>
 
+    <!-- KPI 顶栏数据矩阵 -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
+        <div class="hud-card rounded-2xl p-5 border-l-4 border-l-cyan-500">
+            <div class="text-slate-400 text-xs font-medium uppercase tracking-wider">接入站点总规模</div>
+            <div class="text-3xl md:text-4xl font-extrabold font-mono text-white mt-2">{{ data.total }} <span class="text-sm font-sans font-normal text-slate-400">个</span></div>
+            <div class="text-xs text-cyan-400/80 mt-2 flex items-center">全周期统筹监控</div>
+        </div>
+
+        <div class="hud-card rounded-2xl p-5 border-l-4 border-l-emerald-500 neon-glow-emerald">
+            <div class="text-slate-400 text-xs font-medium uppercase tracking-wider">已上线交付验收</div>
+            <div class="text-3xl md:text-4xl font-extrabold font-mono text-emerald-400 mt-2">{{ data.completed }} <span class="text-sm font-sans font-normal text-slate-400">个</span></div>
+            <div class="text-xs text-emerald-400/80 mt-2 flex items-center">✓ 运营闭环</div>
+        </div>
+
+        <div class="hud-card rounded-2xl p-5 border-l-4 border-l-amber-500">
+            <div class="text-slate-400 text-xs font-medium uppercase tracking-wider">推进攻坚中</div>
+            <div class="text-3xl md:text-4xl font-extrabold font-mono text-amber-400 mt-2">{{ data.in_progress }} <span class="text-sm font-sans font-normal text-slate-400">个</span></div>
+            <div class="text-xs text-amber-400/80 mt-2 flex items-center">⚡ 里程碑节点跟踪</div>
+        </div>
+
+        <div class="hud-card rounded-2xl p-5 border-l-4 border-l-indigo-500">
+            <div class="text-slate-400 text-xs font-medium uppercase tracking-wider">全网验收达成率</div>
+            <div class="text-3xl md:text-4xl font-extrabold font-mono text-indigo-300 mt-2">{{ data.rate }}<span class="text-xl">%</span></div>
+            <!-- 进度条 -->
+            <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
+                <div class="bg-gradient-to-r from-cyan-500 to-indigo-500 h-1.5 rounded-full" style="width: {{ data.rate }}%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 站点详情与里程碑推进卡片流 -->
+    <div class="space-y-4">
+        <div class="flex items-center justify-between px-1">
+            <h2 class="text-base font-bold text-slate-300 tracking-wide flex items-center gap-2">
+                <span class="w-1.5 h-4 bg-cyan-400 rounded-full"></span> 站点全流程节点矩阵
+            </h2>
+            <span class="text-xs text-slate-500">共计 {{ data.stations|length }} 个站点记录</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for s in data.stations %}
+            <div class="hud-card rounded-2xl p-5 flex flex-col justify-between transition duration-300 hover:-translate-y-1 hover:border-cyan-500/40 relative overflow-hidden">
+                <!-- 背景微光标记 -->
+                {% if s.is_done %}
+                <div class="absolute -right-12 -top-12 w-28 h-28 bg-emerald-500/10 rounded-full blur-2xl"></div>
+                {% endif %}
+
+                <div>
+                    <!-- 卡片顶行：站名 + 状态标签 -->
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="font-bold text-lg text-white tracking-wide truncate max-w-[180px]">{{ s.name }}</h3>
+                        {% if s.is_done %}
+                        <span class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                            ● 验收已完成
+                        </span>
+                        {% else %}
+                        <span class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                            ⏳ 推进中
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- 节点生命周期流程链 -->
+                    <div class="space-y-2.5 text-xs text-slate-300 py-2 border-y border-slate-800/80 my-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-400">T+3 节点截止</span>
+                            <span class="font-mono text-slate-200">{{ s.t3 }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-400">T+10 节点截止</span>
+                            <span class="font-mono text-slate-200">{{ s.t10 }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-400">高德/百度路书</span>
+                            <span class="px-2 py-0.5 rounded bg-slate-800 font-mono text-[11px] text-cyan-300">{{ s.roadbook }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 卡片底部状态进度提示 -->
+                <div class="mt-2 pt-2 flex items-center justify-between text-xs">
+                    <span class="text-slate-500">当前阶段</span>
+                    <span class="font-semibold {% if s.is_done %}text-emerald-400{% else %}text-amber-400{% endif %}">
+                        {{ s.status_text }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if data.stations|length == 0 %}
+        <div class="hud-card rounded-2xl p-12 text-center text-slate-500 text-sm">
+            当前表格中暂无站点记录，请在飞书表格中添加数据。
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 自动 60 秒静默轮询刷新 -->
+<script>
+    setInterval(() => {
+        location.reload();
+    }, 60000);
+</script>
