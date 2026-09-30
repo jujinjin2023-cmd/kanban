@@ -4,249 +4,263 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>智能运维指挥监控中心 · 全生命周期看板</title>
-    <!-- Tailwind CSS 界面样式 -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 拖拽排版组件 SortableJS -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         :root {
             --bg-color: #030712;
-            --card-bg: rgba(15, 23, 42, 0.65);
+            --card-bg: rgba(15, 23, 42, 0.7);
             --border-color: rgba(255, 255, 255, 0.1);
-            --accent-color: #06b6d4;
         }
-        body {
-            background-color: var(--bg-color);
-            transition: background-color 0.4s ease;
-        }
+        body { background-color: var(--bg-color); }
         .hud-card {
             background: var(--card-bg);
             backdrop-filter: blur(16px);
             border: 1px solid var(--border-color);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            transition: border-color 0.3s ease, background 0.3s ease;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .drag-handle {
-            cursor: grab;
-        }
-        .drag-handle:active {
-            cursor: grabbing;
-        }
-        .sortable-ghost {
-            opacity: 0.3;
-            transform: scale(0.98);
+        .hud-card:hover { border-color: rgba(6, 182, 212, 0.4); }
+        .tab-btn.active {
+            background: rgba(6, 182, 212, 0.15);
+            color: #22d3ee;
+            border-bottom: 2px solid #06b6d4;
         }
         @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(1.3); } }
         .radar-pulse { animation: pulse-dot 2s infinite ease-in-out; }
     </style>
 </head>
-<body class="text-slate-100 min-h-screen py-8 px-4 md:px-8 font-sans pb-24">
-    <div class="max-w-7xl mx-auto">
-        <!-- 头部导航 -->
-        <header class="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 border-b border-slate-800/80 mb-8 gap-4">
+<body class="text-slate-100 min-h-screen py-6 px-4 md:px-8 font-sans pb-28">
+    <div class="max-w-[1600px] mx-auto">
+        <!-- 顶栏导航 -->
+        <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center pb-6 border-b border-slate-800/80 mb-6 gap-4">
             <div>
-                <div class="flex items-center space-x-3">
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 radar-pulse"></span> LIVE 实时监控中
+                <div class="flex items-center space-x-3 mb-1.5">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 radar-pulse"></span> LIVE 实时监控中
                     </span>
-                    <span class="text-xs text-slate-500 tracking-wider font-mono">FEISHU BITABLE SYNCED</span>
+                    <span class="text-xs text-slate-500 font-mono" id="sub-title-text">FEISHU BITABLE FULL-FIELD SYNCED</span>
                 </div>
-                <h1 class="text-2xl md:text-4xl font-black mt-2 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-100 to-indigo-300">
+                <h1 id="main-title-text" class="text-2xl md:text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-sky-100 to-indigo-300">
                     落站与上线全生命周期 · 智能看板
                 </h1>
             </div>
             
-            <div class="flex items-center space-x-3">
+            <div class="flex flex-wrap items-center gap-3">
                 <div class="text-right mr-2 hidden sm:block">
-                    <div class="text-xs text-slate-400">系统最后同步</div>
-                    <div class="font-mono text-cyan-400 font-bold text-sm" id="clock">加载中...</div>
+                    <div class="text-[11px] text-slate-400">数据最后同步</div>
+                    <div class="font-mono text-cyan-400 font-bold text-xs" id="clock">加载中...</div>
                 </div>
-                <button onclick="loadData()" class="p-2.5 bg-slate-800/80 hover:bg-slate-700 rounded-xl border border-slate-700 text-slate-300 transition text-sm">🔄 刷新</button>
-                <button onclick="toggleConfigModal()" class="px-3.5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-black font-bold rounded-xl transition text-sm flex items-center gap-1.5 shadow-lg shadow-cyan-500/20">
-                    ⚙️ 自定义风格与布局
+                <button onclick="loadData()" class="px-3 py-2 bg-slate-800/80 hover:bg-slate-700 rounded-xl border border-slate-700 text-xs font-bold transition">🔄 刷新</button>
+                <button onclick="toggleConfigModal()" class="px-3.5 py-2 bg-cyan-600 hover:bg-cyan-500 text-black font-bold rounded-xl transition text-xs flex items-center gap-1.5 shadow-lg shadow-cyan-500/20">
+                    ⚙️ 看板自定义与排版
                 </button>
             </div>
         </header>
 
-        <!-- KPI 顶栏数据矩阵（支持鼠标按住拖拽） -->
-        <div id="kpi-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
-            <div data-id="kpi-total" class="hud-card rounded-2xl p-5 border-l-4 border-l-cyan-500 drag-handle">
-                <div class="flex justify-between items-center text-slate-400 text-xs font-medium">
-                    <span>接入站点总规模</span>
-                    <span class="text-slate-600 text-[10px]">⠿ 拖拽</span>
+        <!-- 4大核心视图 Tab 导航切换 -->
+        <div class="flex space-x-2 border-b border-slate-800 pb-3 mb-6 overflow-x-auto text-sm font-semibold">
+            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn active px-4 py-2 rounded-t-lg transition flex items-center gap-2">
+                📊 综合调度驾驶舱
+            </button>
+            <button onclick="switchTab('table')" id="tab-table" class="tab-btn px-4 py-2 rounded-t-lg transition text-slate-400 hover:text-white flex items-center gap-2">
+                📑 全字段透视明细宽表
+            </button>
+            <button onclick="switchTab('overdue')" id="tab-overdue" class="tab-btn px-4 py-2 rounded-t-lg transition text-slate-400 hover:text-white flex items-center gap-2">
+                🚨 风险与倒计时预警
+            </button>
+        </div>
+
+        <!-- ================= 视图 1：驾驶舱看板 ================= -->
+        <div id="view-dashboard" class="space-y-6">
+            <!-- KPI 汇总栏 (支持拖拽) -->
+            <div id="kpi-grid" class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div data-id="kpi-total" class="hud-card rounded-2xl p-5 border-l-4 border-l-cyan-500">
+                    <div class="text-slate-400 text-xs font-medium">接入站点总规模</div>
+                    <div class="text-3xl md:text-4xl font-extrabold font-mono text-white mt-2" id="total">--</div>
                 </div>
-                <div class="text-3xl md:text-4xl font-extrabold font-mono text-white mt-2" id="total">--</div>
+                <div data-id="kpi-completed" class="hud-card rounded-2xl p-5 border-l-4 border-l-emerald-500">
+                    <div class="text-slate-400 text-xs font-medium">已上线交付验收</div>
+                    <div class="text-3xl md:text-4xl font-extrabold font-mono text-emerald-400 mt-2" id="completed">--</div>
+                </div>
+                <div data-id="kpi-in-progress" class="hud-card rounded-2xl p-5 border-l-4 border-l-amber-500">
+                    <div class="text-slate-400 text-xs font-medium">推进攻坚中</div>
+                    <div class="text-3xl md:text-4xl font-extrabold font-mono text-amber-400 mt-2" id="in_progress">--</div>
+                </div>
+                <div data-id="kpi-rate" class="hud-card rounded-2xl p-5 border-l-4 border-l-indigo-500">
+                    <div class="text-slate-400 text-xs font-medium">全网验收达成率</div>
+                    <div class="text-3xl md:text-4xl font-extrabold font-mono text-indigo-300 mt-2" id="rate">0%</div>
+                    <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
+                        <div id="rate-bar" class="bg-gradient-to-r from-cyan-500 to-indigo-500 h-1.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
             </div>
 
-            <div data-id="kpi-completed" class="hud-card rounded-2xl p-5 border-l-4 border-l-emerald-500 drag-handle">
-                <div class="flex justify-between items-center text-slate-400 text-xs font-medium">
-                    <span>已上线交付验收</span>
-                    <span class="text-slate-600 text-[10px]">⠿ 拖拽</span>
+            <!-- 可调尺寸的站点分屏容器 -->
+            <div class="space-y-4">
+                <div class="flex items-center justify-between px-1">
+                    <h2 class="text-base font-bold text-slate-300 flex items-center gap-2">
+                        <span class="w-1.5 h-4 bg-cyan-400 rounded-full"></span> 站点全流程节点矩阵
+                    </h2>
+                    <span class="text-xs text-slate-500">💡 提示：点击任意站点卡片右侧的「详情」，可打开全字段抽屉</span>
                 </div>
-                <div class="text-3xl md:text-4xl font-extrabold font-mono text-emerald-400 mt-2" id="completed">--</div>
-            </div>
 
-            <div data-id="kpi-in-progress" class="hud-card rounded-2xl p-5 border-l-4 border-l-amber-500 drag-handle">
-                <div class="flex justify-between items-center text-slate-400 text-xs font-medium">
-                    <span>推进攻坚中</span>
-                    <span class="text-slate-600 text-[10px]">⠿ 拖拽</span>
-                </div>
-                <div class="text-3xl md:text-4xl font-extrabold font-mono text-amber-400 mt-2" id="in_progress">--</div>
-            </div>
-
-            <div data-id="kpi-rate" class="hud-card rounded-2xl p-5 border-l-4 border-l-indigo-500 drag-handle">
-                <div class="flex justify-between items-center text-slate-400 text-xs font-medium">
-                    <span>全网验收达成率</span>
-                    <span class="text-slate-600 text-[10px]">⠿ 拖拽</span>
-                </div>
-                <div class="text-3xl md:text-4xl font-extrabold font-mono text-indigo-300 mt-2" id="rate">0%</div>
-                <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
-                    <div id="rate-bar" class="bg-gradient-to-r from-cyan-500 to-indigo-500 h-1.5 rounded-full" style="width: 0%"></div>
+                <!-- 站点卡片网格 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="stations-grid">
+                    <div class="text-slate-400 text-sm py-10">正在加载飞书数据...</div>
                 </div>
             </div>
         </div>
 
-        <!-- 站点详情卡片流（支持自由拖拽换位） -->
-        <div class="space-y-4">
-            <div class="flex items-center justify-between px-1">
-                <h2 class="text-base font-bold text-slate-300 flex items-center gap-2">
-                    <span class="w-1.5 h-4 bg-cyan-400 rounded-full"></span> 站点全流程节点矩阵
-                </h2>
-                <span class="text-xs text-slate-500">💡 提示：按住任意卡片可随意拖拽调换顺序</span>
+        <!-- ================= 视图 2：全字段宽表视图 ================= -->
+        <div id="view-table" class="hidden space-y-4">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+                <input type="text" id="table-search" oninput="renderFullTable()" placeholder="🔍 快速搜索任意站点名称或字段内容..." class="w-full md:w-80 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500">
+                <div class="text-xs text-slate-400" id="table-count-tip">共匹配 0 条记录</div>
             </div>
+            
+            <div class="overflow-x-auto rounded-2xl border border-slate-800 hud-card">
+                <table class="w-full text-left text-xs" id="full-data-table">
+                    <thead class="bg-slate-800/80 text-slate-400 font-bold border-b border-slate-700" id="table-head">
+                        <!-- 表头动态填充 -->
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60 font-mono text-slate-200" id="table-body">
+                        <!-- 表体动态填充 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="stations-grid">
-                <div class="text-slate-400 text-sm py-8">正在从飞书拉取最新站点数据...</div>
+        <!-- ================= 视图 3：超期倒计时风险看板 ================= -->
+        <div id="view-overdue" class="hidden space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="risk-grid">
+                <!-- 预警卡片动态注入 -->
             </div>
         </div>
     </div>
 
-    <!-- 自定义配色与布局弹窗 -->
-    <div id="config-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-6">
+    <!-- 侧边栏抽屉：单站点“全字段透视”抽屉 (点击卡片滑出) -->
+    <div id="detail-drawer" class="fixed inset-y-0 right-0 w-full max-w-lg bg-slate-900/95 backdrop-blur-2xl border-l border-slate-700 p-6 z-50 transform translate-x-full transition duration-300 shadow-2xl flex flex-col justify-between">
+        <div>
+            <div class="flex justify-between items-center pb-4 border-b border-slate-800">
+                <div>
+                    <span class="text-[10px] text-cyan-400 uppercase tracking-widest font-mono">STATION INSPECTOR</span>
+                    <h3 class="text-xl font-black text-white" id="drawer-station-name">站点详情</h3>
+                </div>
+                <button onclick="closeDrawer()" class="text-slate-400 hover:text-white text-2xl">✕</button>
+            </div>
+            
+            <!-- 全字段键值对列表容器 -->
+            <div class="mt-4 space-y-3 overflow-y-auto max-h-[75vh] pr-2 text-xs" id="drawer-fields-container">
+                <!-- 动态填充该站点的所有飞书列 -->
+            </div>
+        </div>
+        <div class="pt-4 border-t border-slate-800 text-center text-slate-500 text-[11px]">
+            数据源自飞书多维表格后台 · 实时联动
+        </div>
+    </div>
+
+    <!-- 弹窗：看板自由定制器 (可改标题、调色、分屏大小) -->
+    <div id="config-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 class="text-lg font-bold text-cyan-400">🎨 看板视觉与颜色自定义</h3>
+                <h3 class="text-lg font-bold text-cyan-400">⚙️ 看板标题与分屏个性化定制</h3>
                 <button onclick="toggleConfigModal()" class="text-slate-400 hover:text-white text-xl">✕</button>
             </div>
 
-            <div class="space-y-2">
-                <label class="text-xs text-slate-400 font-semibold uppercase tracking-wider">一键切换科技主题</label>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="applyPreset('#030712', 'rgba(15, 23, 42, 0.75)', 'rgba(6, 182, 212, 0.4)')" class="p-2.5 rounded-lg border border-cyan-500/40 bg-slate-950 text-xs font-bold text-cyan-300 text-left">
-                        🌊 深海科技蓝
+            <!-- 自定义页面主副标题 -->
+            <div class="space-y-3">
+                <label class="text-xs text-slate-400 font-bold uppercase tracking-wider">大屏主/副标题定制</label>
+                <div>
+                    <span class="text-xs text-slate-300">主标题内容：</span>
+                    <input id="input-main-title" class="w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white" value="落站与上线全生命周期 · 智能看板">
+                </div>
+                <div>
+                    <span class="text-xs text-slate-300">副标签文字：</span>
+                    <input id="input-sub-title" class="w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white" value="FEISHU BITABLE FULL-FIELD SYNCED">
+                </div>
+            </div>
+
+            <!-- 分屏卡片尺寸调整 -->
+            <div class="space-y-2 pt-3 border-t border-slate-800">
+                <label class="text-xs text-slate-400 font-bold uppercase tracking-wider">站点分屏框默认宽度</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setCardColumns('grid-cols-1 md:grid-cols-2 lg:grid-cols-3')" class="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-semibold">
+                        📱 标准 (每行3个)
                     </button>
-                    <button onclick="applyPreset('#000000', 'rgba(24, 24, 27, 0.85)', 'rgba(245, 158, 11, 0.5)')" class="p-2.5 rounded-lg border border-amber-500/40 bg-zinc-950 text-xs font-bold text-amber-300 text-left">
-                        🕶️ 黑武士金
+                    <button onclick="setCardColumns('grid-cols-1 md:grid-cols-2')" class="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-semibold">
+                        💻 宽屏半开 (每行2个)
                     </button>
-                    <button onclick="applyPreset('#022c22', 'rgba(6, 78, 59, 0.6)', 'rgba(52, 211, 153, 0.4)')" class="p-2.5 rounded-lg border border-emerald-500/40 bg-emerald-950 text-xs font-bold text-emerald-300 text-left">
-                        🌲 极光骇客绿
-                    </button>
-                    <button onclick="applyPreset('#1e1b4b', 'rgba(49, 46, 129, 0.6)', 'rgba(168, 85, 247, 0.5)')" class="p-2.5 rounded-lg border border-purple-500/40 bg-indigo-950 text-xs font-bold text-purple-300 text-left">
-                        🔮 赛博星空紫
+                    <button onclick="setCardColumns('grid-cols-1')" class="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-semibold">
+                        🖥️ 大屏独占 (每行1个)
                     </button>
                 </div>
             </div>
 
-            <div class="space-y-3 pt-2 border-t border-slate-800">
-                <label class="text-xs text-slate-400 font-semibold uppercase tracking-wider">精细颜色微调</label>
-                <div class="flex items-center justify-between text-sm">
-                    <span>页面背景颜色</span>
-                    <input type="color" id="bg-picker" onchange="updateStyle('--bg-color', this.value)" class="w-9 h-9 rounded border-0 cursor-pointer bg-transparent">
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                    <span>各分屏卡片边框高亮色</span>
-                    <input type="color" id="border-picker" onchange="updateStyle('--border-color', this.value)" class="w-9 h-9 rounded border-0 cursor-pointer bg-transparent">
+            <!-- 主题色快速切换 -->
+            <div class="space-y-2 pt-3 border-t border-slate-800">
+                <label class="text-xs text-slate-400 font-bold uppercase tracking-wider">视觉配色方案</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="applyPreset('#030712', 'rgba(15, 23, 42, 0.7)', 'rgba(6, 182, 212, 0.4)')" class="p-2.5 rounded-lg border border-cyan-500/40 bg-slate-950 text-xs font-bold text-cyan-300 text-left">🌊 深海科技蓝</button>
+                    <button onclick="applyPreset('#000000', 'rgba(24, 24, 27, 0.85)', 'rgba(245, 158, 11, 0.5)')" class="p-2.5 rounded-lg border border-amber-500/40 bg-zinc-950 text-xs font-bold text-amber-300 text-left">🕶️ 黑武士黑金</button>
                 </div>
             </div>
 
             <div class="flex space-x-3 pt-4 border-t border-slate-800">
-                <button onclick="resetLayoutAndStyle()" class="w-1/2 py-2.5 rounded-xl border border-rose-500/40 text-rose-400 hover:bg-rose-500/10 text-xs font-bold transition">
-                    恢复默认布局与颜色
-                </button>
-                <button onclick="toggleConfigModal()" class="w-1/2 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-black transition">
-                    完成并保存
-                </button>
+                <button onclick="resetLayout()" class="w-1/2 py-2.5 rounded-xl border border-rose-500/40 text-rose-400 hover:bg-rose-500/10 text-xs font-bold transition">恢复所有默认</button>
+                <button onclick="saveConfigModal()" class="w-1/2 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-black transition">保存设置</button>
             </div>
         </div>
     </div>
 
     <script>
-        // 你的阿里云 FC 实时数据接口
         const API_URL = "https://yunwei-kanban-udzwfumlpl.cn-hangzhou.fcapp.run/api/data";
-        let rawStationsData = [];
+        let globalData = { stations: [], fields_list: [] };
 
-        // 初始化读取本地缓存的主题颜色
-        function loadSavedTheme() {
+        // 1. 初始化自定义设置
+        function initSettings() {
+            const savedTitle = localStorage.getItem('cfg_title') || "落站与上线全生命周期 · 智能看板";
+            const savedSub = localStorage.getItem('cfg_sub') || "FEISHU BITABLE FULL-FIELD SYNCED";
+            document.getElementById('main-title-text').innerText = savedTitle;
+            document.getElementById('sub-title-text').innerText = savedSub;
+            document.getElementById('input-main-title').value = savedTitle;
+            document.getElementById('input-sub-title').value = savedSub;
+
+            const savedCols = localStorage.getItem('cfg_card_cols') || 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
+            document.getElementById('stations-grid').className = `grid ${savedCols} gap-4`;
+
             const savedBg = localStorage.getItem('cfg_bg') || '#030712';
-            const savedCardBg = localStorage.getItem('cfg_card_bg') || 'rgba(15, 23, 42, 0.65)';
-            const savedBorder = localStorage.getItem('cfg_border') || 'rgba(255, 255, 255, 0.1)';
-            
+            const savedCardBg = localStorage.getItem('cfg_card_bg') || 'rgba(15, 23, 42, 0.7)';
             document.documentElement.style.setProperty('--bg-color', savedBg);
             document.documentElement.style.setProperty('--card-bg', savedCardBg);
-            document.documentElement.style.setProperty('--border-color', savedBorder);
         }
-        loadSavedTheme();
+        initSettings();
 
-        function updateStyle(prop, val) {
-            document.documentElement.style.setProperty(prop, val);
-            if(prop === '--bg-color') localStorage.setItem('cfg_bg', val);
-            if(prop === '--border-color') localStorage.setItem('cfg_border', val);
-        }
-
-        function applyPreset(bg, cardBg, border) {
-            updateStyle('--bg-color', bg);
-            document.documentElement.style.setProperty('--card-bg', cardBg);
-            localStorage.setItem('cfg_card_bg', cardBg);
-            updateStyle('--border-color', border);
-        }
-
-        function resetLayoutAndStyle() {
-            localStorage.clear();
-            location.reload();
-        }
-
-        function toggleConfigModal() {
-            const modal = document.getElementById('config-modal');
-            modal.classList.toggle('hidden');
-        }
-
-        // 初始化拖拽引擎
-        function initDraggables() {
-            const kpiGrid = document.getElementById('kpi-grid');
-            new Sortable(kpiGrid, {
-                animation: 200,
-                ghostClass: 'sortable-ghost',
-                onEnd: () => {
-                    const order = Array.from(kpiGrid.children).map(c => c.getAttribute('data-id'));
-                    localStorage.setItem('cfg_kpi_order', JSON.stringify(order));
-                }
+        // 2. 切换 Tab 视图
+        function switchTab(tab) {
+            ['dashboard', 'table', 'overdue'].forEach(t => {
+                document.getElementById(`view-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).classList.remove('active');
+                document.getElementById(`tab-${t}`).classList.add('text-slate-400');
             });
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`tab-${tab}`).classList.remove('text-slate-400');
 
-            const stationsGrid = document.getElementById('stations-grid');
-            new Sortable(stationsGrid, {
-                animation: 200,
-                handle: '.hud-card',
-                ghostClass: 'sortable-ghost',
-                onEnd: () => {
-                    const order = Array.from(stationsGrid.children).map(c => c.getAttribute('data-station-name'));
-                    localStorage.setItem('cfg_station_order', JSON.stringify(order));
-                }
-            });
+            if (tab === 'table') renderFullTable();
+            if (tab === 'overdue') renderRiskView();
         }
 
-        // 从阿里云 FC 读取飞书实时数据
+        // 3. 读取飞书全量数据
         async function loadData() {
             try {
                 const res = await fetch(API_URL);
                 const data = await res.json();
-                
                 if (data.error) {
-                    document.getElementById('stations-grid').innerHTML = `
-                        <div class="col-span-full p-4 bg-rose-500/20 border border-rose-500/40 text-rose-300 rounded-xl text-sm">
-                            ⚠️ 错误提示：${data.error}
-                        </div>`;
+                    alert(data.error);
                     return;
                 }
+                globalData = data;
 
                 document.getElementById('clock').innerText = data.update_time;
                 document.getElementById('total').innerText = (data.total || 0) + ' 个';
@@ -255,32 +269,25 @@
                 document.getElementById('rate').innerText = (data.rate || 0) + '%';
                 document.getElementById('rate-bar').style.width = (data.rate || 0) + '%';
 
-                rawStationsData = data.stations || [];
+                renderStationsGrid();
+            } catch(e) {
+                console.error(e);
+            }
+        }
 
-                // 保持用户拖拽调换过的顺序
-                const savedOrder = JSON.parse(localStorage.getItem('cfg_station_order') || '[]');
-                if (savedOrder.length > 0) {
-                    rawStationsData.sort((a, b) => {
-                        let idxA = savedOrder.indexOf(a.name);
-                        let idxB = savedOrder.indexOf(b.name);
-                        if (idxA === -1) idxA = 999;
-                        if (idxB === -1) idxB = 999;
-                        return idxA - idxB;
-                    });
-                }
+        // 4. 渲染驾驶舱分屏卡片
+        function renderStationsGrid() {
+            const grid = document.getElementById('stations-grid');
+            if (globalData.stations.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-10">当前表格中暂无站点数据</div>';
+                return;
+            }
 
-                const grid = document.getElementById('stations-grid');
-                if (rawStationsData.length === 0) {
-                    grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-10">当前表格中暂无站点记录</div>';
-                    return;
-                }
-
-                grid.innerHTML = rawStationsData.map(s => `
-                    <div data-station-name="${s.name}" class="hud-card rounded-2xl p-5 drag-handle">
+            grid.innerHTML = globalData.stations.map((s, idx) => `
+                <div class="hud-card rounded-2xl p-5 flex flex-col justify-between">
+                    <div>
                         <div class="flex justify-between items-start mb-3">
-                            <h3 class="font-bold text-lg text-white flex items-center gap-1.5">
-                                <span class="text-slate-600 text-xs">⠿</span> ${s.name}
-                            </h3>
+                            <h3 class="font-bold text-lg text-white truncate max-w-[200px]">${s.name}</h3>
                             <span class="px-2 py-0.5 text-xs rounded ${s.is_done ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-300'}">
                                 ${s.is_done ? '● 已验收' : '⏳ 推进中'}
                             </span>
@@ -291,21 +298,133 @@
                             <div class="flex justify-between"><span>路书配置</span><span class="text-cyan-300">${s.roadbook}</span></div>
                         </div>
                     </div>
-                `).join('');
-
-                initDraggables();
-            } catch(e) {
-                console.error(e);
-                document.getElementById('stations-grid').innerHTML = `
-                    <div class="col-span-full p-4 bg-amber-500/20 border border-amber-500/40 text-amber-300 rounded-xl text-sm">
-                        ⏳ 正在等待阿里云函数计算响应，如果长时间未响应，请检查阿里云 FC 是否已部署好最新的 app.py 代码。
-                    </div>`;
-            }
+                    <div class="mt-4 pt-2 border-t border-slate-800/60 flex justify-between items-center text-xs">
+                        <span class="text-slate-500">共 ${Object.keys(s.all_fields).length} 项完整字段</span>
+                        <button onclick="openDrawer(${idx})" class="px-2.5 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded-lg font-bold transition">
+                            🔍 展开全字段透视
+                        </button>
+                    </div>
+                </div>
+            `).join('');
         }
 
-        // 打开网页立即加载
+        // 5. 渲染全字段透视宽表
+        function renderFullTable() {
+            const query = (document.getElementById('table-search')?.value || '').toLowerCase();
+            const filtered = globalData.stations.filter(s => {
+                return Object.values(s.all_fields).some(val => String(val).toLowerCase().includes(query));
+            });
+
+            document.getElementById('table-count-tip').innerText = `共匹配 ${filtered.length} 条站点记录`;
+
+            // 动态生成表头（以飞书实际所有列名为准）
+            const head = document.getElementById('table-head');
+            head.innerHTML = `<tr>
+                <th class="p-3">序号</th>
+                <th class="p-3">站点名称</th>
+                <th class="p-3">当前状态</th>
+                ${globalData.fields_list.map(f => `<th class="p-3 whitespace-nowrap">${f}</th>`).join('')}
+            </tr>`;
+
+            // 动态填充行
+            const body = document.getElementById('table-body');
+            body.innerHTML = filtered.map((s, idx) => `
+                <tr class="hover:bg-slate-800/40 transition">
+                    <td class="p-3 text-slate-500">${idx + 1}</td>
+                    <td class="p-3 font-bold text-white whitespace-nowrap">${s.name}</td>
+                    <td class="p-3 whitespace-nowrap">
+                        <span class="px-2 py-0.5 rounded text-[11px] ${s.is_done ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-300'}">
+                            ${s.status_text}
+                        </span>
+                    </td>
+                    ${globalData.fields_list.map(f => `<td class="p-3 whitespace-nowrap text-slate-300">${s.all_fields[f] || '--'}</td>`).join('')}
+                </tr>
+            `).join('');
+        }
+
+        // 6. 渲染风险预警看板
+        function renderRiskView() {
+            const riskGrid = document.getElementById('risk-grid');
+            const inProgress = globalData.stations.filter(s => !s.is_done);
+
+            if (inProgress.length === 0) {
+                riskGrid.innerHTML = '<div class="col-span-full p-8 text-center text-emerald-400 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">🎉 全网所有站点均已完成验收交付，无逾期风险！</div>';
+                return;
+            }
+
+            riskGrid.innerHTML = inProgress.map(s => `
+                <div class="hud-card rounded-2xl p-5 border-l-4 border-l-amber-500">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="font-bold text-lg text-white">${s.name}</h4>
+                        <span class="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">履约跟踪中</span>
+                    </div>
+                    <div class="text-xs text-slate-400 space-y-2 mt-3">
+                        <div class="flex justify-between bg-slate-800/60 p-2 rounded-lg">
+                            <span>T+3 预警节点：</span>
+                            <span class="font-mono text-cyan-300 font-bold">${s.t3}</span>
+                        </div>
+                        <div class="flex justify-between bg-slate-800/60 p-2 rounded-lg">
+                            <span>T+10 决胜节点：</span>
+                            <span class="font-mono text-indigo-300 font-bold">${s.t10}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 7. 打开单站点“全字段透视”抽屉
+        function openDrawer(idx) {
+            const s = globalData.stations[idx];
+            document.getElementById('drawer-station-name').innerText = s.name;
+            const container = document.getElementById('drawer-fields-container');
+
+            container.innerHTML = Object.entries(s.all_fields).map(([k, v]) => `
+                <div class="p-3 bg-slate-800/70 rounded-xl border border-slate-700/60 flex flex-col gap-1">
+                    <span class="text-slate-400 text-[11px] font-medium">${k}</span>
+                    <span class="text-slate-100 font-mono text-sm font-semibold">${v}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('detail-drawer').classList.remove('translate-x-full');
+        }
+
+        function closeDrawer() {
+            document.getElementById('detail-drawer').classList.add('translate-x-full');
+        }
+
+        // 8. 自定义配置逻辑
+        function toggleConfigModal() {
+            document.getElementById('config-modal').classList.toggle('hidden');
+        }
+
+        function setCardColumns(colClass) {
+            localStorage.setItem('cfg_card_cols', colClass);
+            document.getElementById('stations-grid').className = `grid ${colClass} gap-4`;
+        }
+
+        function applyPreset(bg, cardBg, border) {
+            localStorage.setItem('cfg_bg', bg);
+            localStorage.setItem('cfg_card_bg', cardBg);
+            document.documentElement.style.setProperty('--bg-color', bg);
+            document.documentElement.style.setProperty('--card-bg', cardBg);
+        }
+
+        function saveConfigModal() {
+            const title = document.getElementById('input-main-title').value;
+            const sub = document.getElementById('input-sub-title').value;
+            localStorage.setItem('cfg_title', title);
+            localStorage.setItem('cfg_sub', sub);
+            document.getElementById('main-title-text').innerText = title;
+            document.getElementById('sub-title-text').innerText = sub;
+            toggleConfigModal();
+        }
+
+        function resetLayout() {
+            localStorage.clear();
+            location.reload();
+        }
+
         loadData();
-        // 每 30 秒自动静默刷新一次
         setInterval(loadData, 30000);
     </script>
 </body>
